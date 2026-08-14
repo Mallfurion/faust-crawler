@@ -30,7 +30,6 @@ jobs:
 
       - name: Check ticket availability and reconcile alerts
         env:
-          ALERT_ASSIGNEE: ${{ vars.ALERT_ASSIGNEE || github.repository_owner }}
+          ALERT_ASSIGNEE: Mallfurion
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: PYTHONPATH=src python -m faust_monitor --json-output monitor-report.json
-

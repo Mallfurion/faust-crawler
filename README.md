@@ -44,7 +44,7 @@ Optional configuration variables:
 | `REQUEST_RETRY_LIMIT` | `3` | Retries for transient Entertix failures |
 | `REQUEST_BACKOFF_SECONDS` | `1` | Initial exponential-backoff delay |
 | `FAUST_MONITOR_USER_AGENT` | Descriptive monitor agent | Identify the read-only client |
-| `ALERT_ASSIGNEE` | Repository owner | GitHub username receiving alerts |
+| `ALERT_ASSIGNEE` | `Mallfurion` in the workflow | GitHub username receiving alerts |
 
 On macOS, Python.org builds do not always load the operating system's public root certificates. The transport securely adds the macOS system root keychains to Python's normal verified TLS context; certificate verification is never disabled.
 
@@ -63,7 +63,7 @@ Before enabling it:
 
 1. Push the repository and keep the workflow on the default branch.
 2. In **Settings → Actions → General → Workflow permissions**, allow the workflow token to write issues if the repository or organization default is read-only.
-3. Optionally create an Actions repository variable named `ALERT_ASSIGNEE` if the repository owner is not the desired GitHub username.
+3. Confirm that the workflow's `ALERT_ASSIGNEE` value is `Mallfurion`.
 4. Manually dispatch one run and inspect its job summary.
 
 No custom token is required in GitHub Actions; `GITHUB_TOKEN` is provided automatically. Do not add a personal access token unless repository policy specifically requires one.
