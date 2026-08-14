@@ -1,0 +1,24 @@
+{
+  "legend": [
+    {
+      "name": "Indisponibil",
+      "price": "0"
+    }
+  ],
+  "sectors": [
+    {
+      "id": "left",
+      "seats": [
+        {"id": "1", "class": "seatingseat"},
+        {"id": "2", "class": "seatingseat"}
+      ]
+    },
+    {
+      "id": "right",
+      "seats": [
+        {"id": "3", "class": "seatingseat"}
+      ]
+    }
+  ]
+}
+

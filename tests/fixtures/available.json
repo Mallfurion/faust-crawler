@@ -1,0 +1,18 @@
+{
+  "legend": [
+    {"name": "Categoria I", "price": "100.00"},
+    {"name": "Indisponibil", "price": "0"}
+  ],
+  "sectors": [
+    {
+      "id": "main",
+      "seats": [
+        {"id": "1", "class": "seatingseat seatingseatactive"},
+        {"id": "2", "class": "seatingseat"},
+        {"id": "3", "class": "seatingseat foo-seatingseatactive"},
+        {"id": "4", "class": "seatingseat seatingseatactive-other"}
+      ]
+    }
+  ]
+}
+
