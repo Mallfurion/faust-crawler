@@ -10,14 +10,22 @@ The monitor never selects seats, writes to a cart, reserves inventory, authentic
 
 GitHub Issues provide both the notification channel and durable transition state:
 
-- The first selectable seat for an event creates an issue labeled `faust-ticket-monitor` and assigns it to the configured recipient.
+- The first selectable seat for an event creates an issue labeled `faust-ticket-monitor` and assigns it to every user GitHub reports as assignable in the repository.
 - The issue contains the performance date, current selectable-seat count, event ID, and direct ticket-selection link.
 - Repeated hourly checks do not post another alert while that issue remains open.
 - A confirmed return to zero selectable seats closes the issue.
 - Later availability comments on and reopens the same issue, generating a new alert.
 - A network or parsing error is `unknown`; it fails the workflow and never closes or reopens the event's issue.
 
-Assignment is important because it triggers GitHub's email or mobile notification for the recipient. Confirm that GitHub notifications are enabled for assigned issues in your account settings.
+Assignment is important because it triggers GitHub's email or mobile notification for each recipient. Confirm that GitHub notifications are enabled for assigned issues in each account's settings.
+
+### Managing alert recipients
+
+Recipients are discovered at run time through GitHub's repository assignees API. For this personal repository, manage the list under **Settings → Collaborators**: invite someone and have them accept to make them eligible, or remove their repository access to remove them from future alert assignments.
+
+The monitor deliberately does not use the repository's commit-contributors list. Contributors are derived from permanent commit history, can be cached for several hours, and are not necessarily eligible issue assignees. GitHub issues support at most ten assignees, so the workflow fails clearly instead of creating a partially assigned alert if the eligible list grows beyond ten.
+
+When tickets remain available, each hourly run also synchronizes the open alert issue with the current assignable-user list. Both the real monitor and the test-notification workflow use the same recipient source.
 
 ## Local use
 
@@ -44,7 +52,6 @@ Optional configuration variables:
 | `REQUEST_RETRY_LIMIT` | `3` | Retries for transient Entertix failures |
 | `REQUEST_BACKOFF_SECONDS` | `1` | Initial exponential-backoff delay |
 | `FAUST_MONITOR_USER_AGENT` | Descriptive monitor agent | Identify the read-only client |
-| `ALERT_ASSIGNEE` | `Mallfurion` in the workflow | GitHub username receiving alerts |
 
 On macOS, Python.org builds do not always load the operating system's public root certificates. The transport securely adds the macOS system root keychains to Python's normal verified TLS context; certificate verification is never disabled.
 
@@ -63,7 +70,7 @@ Before enabling it:
 
 1. Push the repository and keep the workflow on the default branch.
 2. In **Settings → Actions → General → Workflow permissions**, allow the workflow token to write issues if the repository or organization default is read-only.
-3. Confirm that the workflow's `ALERT_ASSIGNEE` value is `Mallfurion`.
+3. Confirm the intended recipients appear under **Settings → Collaborators** and have accepted their invitations.
 4. Manually dispatch one run and inspect its job summary.
 
 No custom token is required in GitHub Actions; `GITHUB_TOKEN` is provided automatically. Do not add a personal access token unless repository policy specifically requires one.
@@ -82,7 +89,7 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 
 ## Test phone notifications
 
-The separate [`test-notification.yml`](.github/workflows/test-notification.yml) workflow creates a new issue assigned to `Mallfurion`. Manually running it from **Actions → Test issue notification → Run workflow** always creates the test issue.
+The separate [`test-notification.yml`](.github/workflows/test-notification.yml) workflow creates a new issue assigned to every user GitHub reports as assignable in the repository. Manually running it from **Actions → Test issue notification → Run workflow** always creates the test issue.
 
 Hourly issue creation is disabled by default. Its scheduled-test switch is near the top of the workflow:
 

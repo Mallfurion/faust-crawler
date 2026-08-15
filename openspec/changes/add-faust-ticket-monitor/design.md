@@ -51,7 +51,7 @@ At the current eight performances, a successful run requires approximately seven
 
 ### Use GitHub Issues as both alert channel and durable state
 
-Maintain one issue per Entertix event ID, identified by a label and a machine-readable marker in the issue body. When selectable seats first appear, create an issue assigned to the configured GitHub username. Include the performance date, count, direct ticket URL, and event ID. If the matching issue is already open, update its factual content without posting another alert comment.
+Maintain one issue per Entertix event ID, identified by a label and a machine-readable marker in the issue body. When selectable seats first appear, query GitHub's repository assignees endpoint and create an issue assigned to every eligible user. Include the performance date, count, direct ticket URL, and event ID. If the matching issue is already open, update its factual content and synchronize its assignees without posting another alert comment.
 
 When a known event returns to a valid sold-out state, close its open issue. If availability later returns, reopen the issue and add a new alert comment. Never close or reopen issues based on an `unknown` result. Notification API failures fail the workflow.
 
@@ -68,7 +68,8 @@ The workflow checks out the repository, sets up Python, runs tests when code cha
 - **Entertix changes HTML paths or seat-map JSON** → Validate all required structures, retain fixture-based parser tests, fail as `unknown`, and include actionable diagnostics in the job summary.
 - **GitHub delays or drops a scheduled run** → Run at minute 17, retain manual dispatch, and document that GitHub scheduling is not a real-time SLA.
 - **A ticket appears and disappears between hourly runs** → Accept this limitation for the requested polling rate; keep the interval configurable for a future policy change.
-- **GitHub does not notify the intended person** → Assign alert issues to an explicit `ALERT_ASSIGNEE` repository variable, default it to the repository owner for personal repositories, and document enabling GitHub email or mobile notifications.
+- **GitHub does not notify the intended people** → Resolve recipients from GitHub's assignable-user list, manage that list through repository collaborators, and document enabling GitHub email or mobile notifications.
+- **More than ten users are assignable** → Fail clearly before creating a partially assigned issue because GitHub supports at most ten issue assignees.
 - **A public repository disables an inactive scheduled workflow** → Recommend a private personal repository for unattended use and document GitHub's public-repository inactivity behavior.
 - **The issue API is unavailable after availability is detected** → Fail the run visibly and retry the complete monitor on the next schedule; never mark the event as alerted locally unless the issue transition succeeds.
 - **A performance disappears from search results** → Do not infer sold-out status from absence. Expired events can be closed only after their recorded date passes; unexplained future-event disappearance is reported for review.
@@ -77,7 +78,7 @@ The workflow checks out the repository, sets up Python, runs tests when code cha
 
 1. Add the Python package, CLI, tests, workflow, and documentation without enabling external side effects in tests.
 2. Run fixture tests and a manual live dry run that prints availability without writing issues.
-3. Configure `ALERT_ASSIGNEE` if the repository owner is not the desired recipient.
+3. Add the desired recipients as repository collaborators and have them accept their invitations.
 4. Merge the workflow onto the default branch and manually dispatch it once with issue writes enabled.
 5. Confirm the job summary and issue permissions, then rely on the hourly schedule.
 
@@ -86,4 +87,3 @@ Rollback consists of disabling or removing the workflow. Existing alert issues r
 ## Open Questions
 
 - Whether a secondary push channel such as Telegram should be added after the GitHub Issue flow is proven. This is not required for the initial implementation.
-

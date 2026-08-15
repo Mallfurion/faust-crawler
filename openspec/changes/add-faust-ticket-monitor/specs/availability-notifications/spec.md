@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Create an actionable availability alert
-The system SHALL create one GitHub Issue for a performance when it first changes from a known non-available state to a state with one or more selectable seats. The issue SHALL be assigned to the configured alert recipient and SHALL include the performance date, selectable-seat count, direct ticket URL, and Entertix event ID.
+The system SHALL create one GitHub Issue for a performance when it first changes from a known non-available state to a state with one or more selectable seats. The issue SHALL be assigned to every user GitHub reports as assignable in the repository and SHALL include the performance date, selectable-seat count, direct ticket URL, and Entertix event ID.
 
 #### Scenario: Tickets become available for the first time
 - **WHEN** a performance has selectable seats and has no existing monitor issue
@@ -56,4 +56,3 @@ The system SHALL treat failure to complete a required issue creation, assignment
 #### Scenario: GitHub issue mutation fails
 - **WHEN** an availability transition requires an issue mutation and the GitHub API rejects or fails the operation
 - **THEN** the workflow reports the notification error and finishes with a non-zero status
-

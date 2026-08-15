@@ -2,7 +2,7 @@
 
 - [x] 1.1 Create the Python 3.12 package structure under `src/faust_monitor/`, a module entry point, and project metadata with no runtime dependencies.
 - [x] 1.2 Define typed performance, availability-result, status, and diagnostic models shared by crawling, reporting, and notification code.
-- [x] 1.3 Add configuration for the Entertix search URL, request timeout, retry limit, user agent, GitHub repository, and optional `ALERT_ASSIGNEE` override.
+- [x] 1.3 Add configuration for the Entertix search URL, request timeout, retry limit, user agent, and GitHub repository.
 
 ## 2. Entertix Monitoring
 
@@ -18,6 +18,7 @@
 - [x] 3.2 Implement creation and assignment of actionable issues for newly available events, including date, count, event ID, and direct ticket URL.
 - [x] 3.3 Implement idempotent updates for persistent availability, closure after confirmed sell-out, and reopening plus a new alert comment when availability returns.
 - [x] 3.4 Ensure unknown monitoring results never mutate issue state and ensure every required GitHub API mutation failure causes a failing process status.
+- [x] 3.5 Discover all GitHub-assignable repository users at run time, enforce GitHub's ten-assignee limit, and synchronize open availability issues when that list changes.
 
 ## 4. Automation and Documentation
 

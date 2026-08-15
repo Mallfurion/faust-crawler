@@ -13,9 +13,10 @@ from faust_monitor.models import AvailabilityResult, AvailabilityStatus, Perform
 
 
 class FakeApi:
-    def __init__(self, issues=None, *, fail_on=None):
+    def __init__(self, issues=None, *, fail_on=None, assignees=("florin",)):
         self.issues = list(issues or [])
         self.fail_on = fail_on
+        self.assignees = tuple(assignees)
         self.calls = []
         self.next_number = max((issue.number for issue in self.issues), default=0) + 1
 
@@ -27,13 +28,17 @@ class FakeApi:
     def ensure_monitor_label(self):
         self._record("label")
 
+    def list_assignable_users(self):
+        self._record("assignees")
+        return self.assignees
+
     def list_monitor_issues(self):
         self._record("list")
         return list(self.issues)
 
-    def create_issue(self, *, title, body, assignee):
-        self._record("create", title, body, assignee)
-        issue = MonitorIssue(self.next_number, title, body, "open")
+    def create_issue(self, *, title, body, assignees):
+        self._record("create", title, body, assignees)
+        issue = MonitorIssue(self.next_number, title, body, "open", assignees)
         self.next_number += 1
         self.issues.append(issue)
         return issue
@@ -46,6 +51,7 @@ class FakeApi:
             title=fields.get("title", current.title),
             body=fields.get("body", current.body),
             state=fields.get("state", current.state),
+            assignees=tuple(fields.get("assignees", current.assignees)),
         )
         self.issues[self.issues.index(current)] = updated
         return updated
@@ -88,10 +94,10 @@ class NotificationTests(unittest.TestCase):
     def test_first_availability_creates_assigned_actionable_issue(self):
         api = FakeApi()
 
-        GitHubIssueNotifier(api, assignee="florin").reconcile([available()])
+        GitHubIssueNotifier(api).reconcile([available()])
 
         create = next(call for call in api.calls if call[0] == "create")
-        self.assertEqual(create[3], "florin")
+        self.assertEqual(create[3], ("florin",))
         self.assertIn("40017", create[2])
         self.assertIn("2", create[2])
         self.assertIn("https://example.test/tickets/40017", create[2])
@@ -100,7 +106,7 @@ class NotificationTests(unittest.TestCase):
     def test_multiple_available_events_create_independent_issues(self):
         api = FakeApi()
 
-        GitHubIssueNotifier(api, assignee="florin").reconcile(
+        GitHubIssueNotifier(api).reconcile(
             [available("40017", 4), available("40018", 5)]
         )
 
@@ -108,17 +114,19 @@ class NotificationTests(unittest.TestCase):
 
     def test_persistent_availability_does_not_alert_twice(self):
         api = FakeApi()
-        notifier = GitHubIssueNotifier(api, assignee="florin")
+        notifier = GitHubIssueNotifier(api)
         notifier.reconcile([available()])
         api.calls.clear()
 
         notifier.reconcile([available()])
 
-        self.assertEqual([call[0] for call in api.calls], ["label", "list"])
+        self.assertEqual(
+            [call[0] for call in api.calls], ["assignees", "label", "list"]
+        )
 
     def test_confirmed_sell_out_closes_open_issue(self):
         api = FakeApi()
-        notifier = GitHubIssueNotifier(api, assignee="florin")
+        notifier = GitHubIssueNotifier(api)
         notifier.reconcile([available()])
         api.calls.clear()
 
@@ -130,7 +138,7 @@ class NotificationTests(unittest.TestCase):
 
     def test_reappearance_comments_then_reopens_existing_issue(self):
         api = FakeApi()
-        notifier = GitHubIssueNotifier(api, assignee="florin")
+        notifier = GitHubIssueNotifier(api)
         notifier.reconcile([available()])
         notifier.reconcile([sold_out()])
         api.calls.clear()
@@ -147,17 +155,17 @@ class NotificationTests(unittest.TestCase):
     def test_unknown_only_result_performs_no_github_calls(self):
         api = FakeApi()
 
-        GitHubIssueNotifier(api, assignee="florin").reconcile([unknown()])
+        GitHubIssueNotifier(api).reconcile([unknown()])
 
         self.assertEqual(api.calls, [])
 
     def test_unknown_event_is_not_closed_by_expiry_cleanup(self):
         api = FakeApi()
-        initial = GitHubIssueNotifier(api, assignee="florin", today=date(2026, 8, 1))
+        initial = GitHubIssueNotifier(api, today=date(2026, 8, 1))
         initial.reconcile([available()])
         api.calls.clear()
 
-        later = GitHubIssueNotifier(api, assignee="florin", today=date(2026, 10, 1))
+        later = GitHubIssueNotifier(api, today=date(2026, 10, 1))
         later.reconcile([unknown()])
 
         self.assertEqual(api.calls, [])
@@ -165,11 +173,11 @@ class NotificationTests(unittest.TestCase):
 
     def test_expired_missing_event_is_closed(self):
         api = FakeApi()
-        initial = GitHubIssueNotifier(api, assignee="florin", today=date(2026, 8, 1))
+        initial = GitHubIssueNotifier(api, today=date(2026, 8, 1))
         initial.reconcile([available()])
         api.calls.clear()
 
-        later = GitHubIssueNotifier(api, assignee="florin", today=date(2026, 10, 1))
+        later = GitHubIssueNotifier(api, today=date(2026, 10, 1))
         later.reconcile([sold_out("40018", 5)])
 
         self.assertEqual(api.issues[0].state, "closed")
@@ -178,7 +186,7 @@ class NotificationTests(unittest.TestCase):
         api = FakeApi(fail_on="create")
 
         with self.assertRaisesRegex(GitHubIssueError, "forced create failure"):
-            GitHubIssueNotifier(api, assignee="florin").reconcile([available()])
+            GitHubIssueNotifier(api).reconcile([available()])
 
     def test_duplicate_event_markers_fail_safely(self):
         body = "<!-- faust-monitor:event-id=40017 -->"
@@ -190,7 +198,26 @@ class NotificationTests(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(GitHubIssueError, "Multiple"):
-            GitHubIssueNotifier(api, assignee="florin").reconcile([available()])
+            GitHubIssueNotifier(api).reconcile([available()])
+
+    def test_all_assignable_users_are_assigned(self):
+        api = FakeApi(assignees=("florin", "friend"))
+
+        GitHubIssueNotifier(api).reconcile([available()])
+
+        self.assertEqual(api.issues[0].assignees, ("florin", "friend"))
+
+    def test_existing_available_issue_syncs_changed_assignees(self):
+        api = FakeApi(assignees=("florin",))
+        notifier = GitHubIssueNotifier(api)
+        notifier.reconcile([available()])
+        api.assignees = ("florin", "friend")
+        api.calls.clear()
+
+        notifier.reconcile([available()])
+
+        update = next(call for call in api.calls if call[0] == "update")
+        self.assertEqual(update[2]["assignees"], ["florin", "friend"])
 
 
 if __name__ == "__main__":

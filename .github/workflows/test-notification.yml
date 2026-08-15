@@ -4,7 +4,6 @@ name: Test issue notification
 # want the hourly schedule to create test issues.
 env:
   ENABLE_SCHEDULED_NOTIFICATION_TEST: "false"
-  TEST_NOTIFICATION_ASSIGNEE: Mallfurion
 
 on:
   schedule:
@@ -30,11 +29,25 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          assignees="$(gh api --paginate \
+            --jq '.[].login' \
+            "repos/${GITHUB_REPOSITORY}/assignees" | paste -sd, -)"
+
+          if [[ -z "$assignees" ]]; then
+            echo "GitHub reported no assignable users" >&2
+            exit 1
+          fi
+
+          if (( $(tr -cd ',' <<< "$assignees" | wc -c) >= 10 )); then
+            echo "GitHub reported more than the supported maximum of 10 assignees" >&2
+            exit 1
+          fi
+
           gh issue create \
             --repo "$GITHUB_REPOSITORY" \
             --title "[Notification test] Run #${GITHUB_RUN_NUMBER}" \
-            --assignee "$TEST_NOTIFICATION_ASSIGNEE" \
-            --body "This issue was created automatically to test GitHub mobile notifications. It was assigned to **${TEST_NOTIFICATION_ASSIGNEE}**. Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            --assignee "$assignees" \
+            --body "This issue was created automatically to test GitHub mobile notifications for all assignable repository users: **${assignees}**. Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Report that scheduled notification testing is disabled
         if: ${{ github.event_name == 'schedule' && env.ENABLE_SCHEDULED_NOTIFICATION_TEST != 'true' }}

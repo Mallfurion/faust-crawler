@@ -18,13 +18,11 @@ class Config:
     user_agent: str = "faust-ticket-monitor/0.1 (read-only hourly availability check)"
     github_repository: str | None = None
     github_token: str | None = None
-    alert_assignee: str | None = None
     github_api_url: str = "https://api.github.com"
 
     @classmethod
     def from_env(cls, *, search_url: str | None = None) -> Config:
         repository = os.getenv("GITHUB_REPOSITORY") or None
-        owner = repository.split("/", 1)[0] if repository and "/" in repository else None
         return cls(
             search_url=search_url or os.getenv("FAUST_SEARCH_URL", DEFAULT_SEARCH_URL),
             request_timeout_seconds=_env_float("REQUEST_TIMEOUT_SECONDS", 15.0),
@@ -36,7 +34,6 @@ class Config:
             ),
             github_repository=repository,
             github_token=os.getenv("GITHUB_TOKEN") or None,
-            alert_assignee=os.getenv("ALERT_ASSIGNEE") or owner,
             github_api_url=os.getenv("GITHUB_API_URL", "https://api.github.com").rstrip("/"),
         )
 
