@@ -1,0 +1,41 @@
+name: Test issue notification
+
+# Manual runs always create a test issue. Set this to "true" only if you also
+# want the hourly schedule to create test issues.
+env:
+  ENABLE_SCHEDULED_NOTIFICATION_TEST: "false"
+  TEST_NOTIFICATION_ASSIGNEE: Mallfurion
+
+on:
+  schedule:
+    - cron: "29 * * * *"
+      timezone: "Europe/Bucharest"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: faust-notification-test
+  cancel-in-progress: false
+
+jobs:
+  create-test-issue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Create and assign notification test issue
+        if: ${{ github.event_name == 'workflow_dispatch' || env.ENABLE_SCHEDULED_NOTIFICATION_TEST == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "[Notification test] Run #${GITHUB_RUN_NUMBER}" \
+            --assignee "$TEST_NOTIFICATION_ASSIGNEE" \
+            --body "This issue was created automatically to test GitHub mobile notifications. It was assigned to **${TEST_NOTIFICATION_ASSIGNEE}**. Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+      - name: Report that scheduled notification testing is disabled
+        if: ${{ github.event_name == 'schedule' && env.ENABLE_SCHEDULED_NOTIFICATION_TEST != 'true' }}
+        run: echo "Scheduled notification testing is disabled. Manual workflow_dispatch runs remain enabled."

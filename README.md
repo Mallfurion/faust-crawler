@@ -82,25 +82,25 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 
 ## Test phone notifications
 
-The separate [`test-notification.yml`](.github/workflows/test-notification.yml) workflow creates a new issue assigned to `Mallfurion`. It runs hourly at minute 29 and also supports an immediate manual run from **Actions → Test issue notification → Run workflow**.
+The separate [`test-notification.yml`](.github/workflows/test-notification.yml) workflow creates a new issue assigned to `Mallfurion`. Manually running it from **Actions → Test issue notification → Run workflow** always creates the test issue.
 
-Its on/off switch is near the top of the workflow:
-
-```yaml
-env:
-  ENABLE_NOTIFICATION_TEST: "true"
-```
-
-After you receive the expected phone notification, edit the workflow from GitHub and change the value to `"false"`:
+Hourly issue creation is disabled by default. Its scheduled-test switch is near the top of the workflow:
 
 ```yaml
 env:
-  ENABLE_NOTIFICATION_TEST: "false"
+  ENABLE_SCHEDULED_NOTIFICATION_TEST: "false"
 ```
 
-Commit that one-line change to the default branch. Future scheduled runs will skip issue creation. The scheduled workflow still starts briefly to read the switch; use **Actions → Test issue notification → ⋯ → Disable workflow** if you also want to stop those test workflow runs entirely.
+To temporarily create test issues every hour at minute 29, edit the workflow from GitHub and change the value to `"true"`:
 
-Each enabled hourly run intentionally creates a fresh issue so that it can generate a new assignment notification. Close the test issues after confirming delivery.
+```yaml
+env:
+  ENABLE_SCHEDULED_NOTIFICATION_TEST: "true"
+```
+
+Commit that one-line change to the default branch. Change it back to `"false"` to stop hourly test issues; manual runs will continue to work. The scheduled workflow still starts briefly to read the switch, but skips issue creation while the switch is false.
+
+Each manual run or enabled hourly run intentionally creates a fresh issue so that it can generate a new assignment notification. Close the test issues after confirming delivery.
 
 ## Request rate and failure behavior
 
