@@ -6,9 +6,9 @@ env:
   ENABLE_SCHEDULED_NOTIFICATION_TEST: "false"
 
 on:
-  schedule:
-    - cron: "29 * * * *"
-      timezone: "Europe/Bucharest"
+  # schedule:
+  #   - cron: "29 * * * *"
+  #     timezone: "Europe/Bucharest"
   workflow_dispatch:
 
 permissions:
